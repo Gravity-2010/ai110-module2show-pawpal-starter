@@ -12,6 +12,47 @@ The 5 core actions that I think the user should be able to perform are:
 - View today’s tasks
 - Mark a task as complete
 
+
+Objects I want to use along with their methods and attributes:
+
+1. Owner
+- Attributes:
+    name
+- Methods:
+    create_profile()
+    update_name()
+
+2. Pet
+- Attributes:
+    name
+    species
+    owner
+- Methods:
+    create_pet()
+    update_pet_info()
+
+3. Task
+- Attributes:
+    title
+    duration
+    priority
+    pet
+    completed (optional for now)
+- Methods:
+    create_task()
+    edit_task()
+    mark_complete()
+
+4. Plan
+- Attributes:
+    pet
+    tasks
+    date
+    summary/explanation
+- Methods:
+    generate_plan()
+    explain_plan()
+
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
