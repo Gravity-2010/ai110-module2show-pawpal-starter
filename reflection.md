@@ -4,6 +4,14 @@
 
 **a. Initial design**
 
+The 5 core actions that I think the user should be able to perform are:
+
+- Add a pet
+- Add a care task (such as a walk or feeding)
+- Schedule a task for today
+- View today’s tasks
+- Mark a task as complete
+
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
