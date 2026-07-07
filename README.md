@@ -75,14 +75,15 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+All scheduling logic lives in `pawpal_system.py`. Each feature and the method that implements it:
 
-| Feature | Method(s) | Notes |
-|---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Feature | Method | What it does |
+|---------|--------|--------------|
+| Task sorting | `Scheduler.sort_by_time()` | Sorts tasks chronologically by `start_time`, using each task's "HH:MM" string as the sort key. Unscheduled tasks go last. |
+| Filtering | `Scheduler.filter_tasks()` | Returns tasks filtered by completion status (`completed=True/False`) and/or `pet_name` (case-insensitive). |
+| Conflict detection | `Scheduler.detect_conflicts()` | Compares each scheduled task's time slot with the next one and returns a warning message for any overlap. Warns instead of crashing. |
+| Recurring tasks | `Task.mark_complete()` | Completing a `DAILY` or `WEEKLY` task auto-creates the next occurrence (due today + 1 day / + 7 days, via `timedelta`). `ONCE` tasks don't recur. |
+| Priority planning | `Scheduler.build_schedule()` | Picks pending tasks that fit the time budget, highest priority first, and stamps each with a start time. |
 
 ## 📸 Demo Walkthrough
 
