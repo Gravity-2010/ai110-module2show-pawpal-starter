@@ -84,8 +84,13 @@ against. I added `Task.start_time` (set when a task is placed in a plan) and cha
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+Conflict detection warns instead of resolving, and only checks neighbouring tasks.
+
+`Scheduler.detect_conflicts()` compares each task's full time slot against the next one (start time plus duration, via `_advance`), so it does catch real overlaps — not just tasks that start at the exact same minute. But it makes two
+deliberate simplifications:
+
+1. It reports conflicts rather than fixing them. When two tasks overlap, the method returns a plain warning string and leaves both tasks where they are. It never shuffles start times, shortens a task, or drops one. The owner is told "these two clash — you decide," instead of the program silently rearranging their day.
+2. It only compares each task with its immediate neighbour after sorting by time, not every task against every other. This is O(n) instead of O(n²): fast and simple, and enough to flag back-to-back clashes. The blind spot is one long task that overlaps a later, non-adjacent task — e.g. a 90-minute task at 9:00 that runs into a task at 10:15 with a shorter task sitting between them could be missed.
 
 ---
 
