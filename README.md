@@ -53,6 +53,9 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 #   09:00 — Feeding (10 min) [priority: high]
 #   ...
 ```
+'''
+![alt text](file:///home/gravity/Pictures/Screenshots/Screenshot%20from%202026-07-07%2011-58-16.png)
+'''
 
 ## 🧪 Testing PawPal+
 
