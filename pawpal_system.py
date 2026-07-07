@@ -174,12 +174,7 @@ class Scheduler:
 
     # --- organize -------------------------------------------------------
     def build_schedule(self, available_minutes: int, pet: Pet | None = None) -> list[Task]:
-        """Select and time-order the pending tasks that fit in the budget.
-
-        Tasks are ranked by priority (highest first), then by shorter duration
-        so more can fit. Each selected task is assigned a `start_time` laid out
-        back-to-back from `day_start`. Returns the ordered, scheduled tasks.
-        """
+        """Select pending tasks that fit the budget, ordered by priority and time-stamped."""
         candidates = sorted(
             self.pending_tasks(pet),
             key=lambda t: (-t.priority, t.duration),
