@@ -1,0 +1,76 @@
+classDiagram
+    %% PawPal+ FINAL class diagram — reflects the implementation in pawpal_system.py.
+    %% Changes from the initial uml.mmd:
+    %%   - `Plan` became `Scheduler` (the "brain" that works over one Owner).
+    %%   - Relationships are now bidirectional (parents hold child lists).
+    %%   - `priority` is a Priority IntEnum; tasks carry a Frequency enum.
+    %%   - Tasks gained start_time / due_date so the schedule can say *when*.
+
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+    }
+
+    class Frequency {
+        <<enumeration>>
+        ONCE
+        DAILY
+        WEEKLY
+    }
+
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +create_profile(name) Owner
+        +update_name(new_name) void
+        +add_pet(pet) void
+        +all_tasks() list~Task~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +Owner owner
+        +list~Task~ tasks
+        +create_pet(name, species, owner) Pet
+        +update_pet_info(name, species) void
+        +add_task(task) void
+        +pending_tasks() list~Task~
+    }
+
+    class Task {
+        +str title
+        +int duration
+        +Priority priority
+        +Frequency frequency
+        +bool completed
+        +time start_time
+        +date due_date
+        +Pet pet
+        +create_task(title, duration, priority, frequency) Task
+        +edit_task(title, duration, priority, frequency) void
+        +mark_complete(today) Task
+    }
+
+    class Scheduler {
+        +Owner owner
+        +time day_start
+        +all_tasks() list~Task~
+        +pending_tasks(pet) list~Task~
+        +build_schedule(available_minutes, pet) list~Task~
+        +sort_by_time(tasks) list~Task~
+        +filter_tasks(completed, pet_name) list~Task~
+        +complete(task, today) Task
+        +detect_conflicts(tasks) list~str~
+        +explain(available_minutes, pet) str
+    }
+
+    %% Relationships (o-- aggregation, --> association, ..> dependency)
+    Owner "1" o-- "*" Pet : owns
+    Pet "1" o-- "*" Task : has (backlog)
+    Scheduler "1" --> "1" Owner : plans for
+    Scheduler ..> Task : selects & orders
+    Task --> Priority : has
+    Task --> Frequency : recurs by

@@ -97,17 +97,29 @@ if st.button("Add task"):
 
 if pet.tasks:
     st.write("Current tasks:")
-    st.table(
-        [
-            {
-                "title": t.title,
-                "duration_minutes": t.duration,
-                "priority": t.priority.name.lower(),
-                "done": t.completed,
-            }
-            for t in pet.tasks
-        ]
+    # Filter via the Scheduler so the UI reflects the same logic the planner uses.
+    scheduler = Scheduler(owner)
+    task_filter = st.radio(
+        "Show", ["All", "Pending", "Done"], horizontal=True, label_visibility="collapsed"
     )
+    completed_flag = {"All": None, "Pending": False, "Done": True}[task_filter]
+    shown = scheduler.filter_tasks(completed=completed_flag, pet_name=pet.name)
+
+    if shown:
+        st.table(
+            [
+                {
+                    "title": t.title,
+                    "duration_minutes": t.duration,
+                    "priority": t.priority.name.lower(),
+                    "frequency": t.frequency.value,
+                    "done": "✅" if t.completed else "⬜",
+                }
+                for t in shown
+            ]
+        )
+    else:
+        st.info(f"No {task_filter.lower()} tasks for {pet.name}.")
 else:
     st.info("No tasks yet. Add one above.")
 
@@ -122,5 +134,52 @@ available_minutes = st.number_input(
 
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner)
-    plan = scheduler.explain(available_minutes=int(available_minutes))
-    st.text(plan)
+    scheduled = scheduler.build_schedule(available_minutes=int(available_minutes))
+
+    if not scheduled:
+        st.warning(
+            "Nothing scheduled — either there are no pending tasks, or none fit "
+            "your time budget. Try adding more minutes above."
+        )
+    else:
+        used = sum(t.duration for t in scheduled)
+        st.success(
+            f"Planned {len(scheduled)} task(s) using {used} of "
+            f"{int(available_minutes)} minutes for {owner.name}."
+        )
+
+        # --- Today's schedule, sorted chronologically by start time --------
+        st.markdown("#### 🕒 Today's schedule")
+        st.table(
+            [
+                {
+                    "time": t.start_time.strftime("%H:%M") if t.start_time else "--:--",
+                    "task": t.title,
+                    "pet": t.pet.name if t.pet else "—",
+                    "minutes": t.duration,
+                    "priority": t.priority.name.lower(),
+                }
+                for t in scheduler.sort_by_time(scheduled)
+            ]
+        )
+
+        # --- Tasks that didn't fit the budget ------------------------------
+        skipped = [t for t in scheduler.pending_tasks() if t not in scheduled]
+        if skipped:
+            st.info(
+                "Didn't fit today: " + ", ".join(t.title for t in skipped)
+            )
+
+        # --- Conflict warnings ---------------------------------------------
+        st.markdown("#### ⚠️ Conflict check")
+        conflicts = scheduler.detect_conflicts(scheduled)
+        if conflicts:
+            st.warning(
+                f"{len(conflicts)} scheduling conflict(s) found. These tasks "
+                "overlap — you'll want to move one or shorten it:"
+            )
+            for warning in conflicts:
+                # Strip the leading emoji; Streamlit's st.warning adds its own icon.
+                st.warning(warning.replace("⚠️  ", ""))
+        else:
+            st.success("No scheduling conflicts — your pets' day is clear! 🐾")
