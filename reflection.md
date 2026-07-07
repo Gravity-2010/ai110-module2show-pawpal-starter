@@ -61,33 +61,17 @@ Objects I want to use along with their methods and attributes:
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
-Yes. Reviewing the skeleton against the 5 core actions and the scheduling
-requirement surfaced three gaps, which I fixed:
+Following are the gaps which I fixed:
 
-1. **Made the class relationships two-directional and settled where tasks
-   live.** My UML said an Owner owns many Pets and a Pet has many Tasks, but
-   in code only the child pointed up (`Pet.owner`, `Task.pet`) — a parent had
-   no way to list its children. I added `Owner.pets` and `Pet.tasks` (plus
-   `add_pet()` / `add_task()` helpers). This also resolved an ambiguity: the
-   **Pet now holds the full backlog** of care tasks, while a **Plan holds only
-   the subset chosen for one day**. Without this, "Add a pet" and "View
-   today's tasks" had nowhere to store or read their data.
+1. Made the class relationships two-directional and settled where tasks live. 
+My UML said an Owner owns many Pets and a Pet has many Tasks, but in code only the child pointed up (`Pet.owner`, `Task.pet`) — a parent had no way to list its children. I added `Owner.pets` and `Pet.tasks` (plus
+`add_pet()` / `add_task()` helpers). This also resolved an ambiguity: the Pet now holds the full backlog** of care tasks, while a Plan holds only
+the subset chosen for one day. Without this, "Add a pet" and "View today's tasks" had nowhere to store or read their data.
 
-2. **Changed `priority` from a string to a `Priority` IntEnum
-   (LOW/MEDIUM/HIGH).** The scheduler's core step is ordering tasks by
-   priority, and the strings `"low"/"medium"/"high"` sort alphabetically
-   (`"high" < "low"`), which is wrong. An ordered IntEnum lets me sort tasks
-   directly and turns a mistyped priority into an error instead of a silent
-   bug.
+2. Changed `priority` from a string to a `Priority` IntEnum (LOW/MEDIUM/HIGH). The scheduler's core step is ordering tasks by priority, and the strings `"low"/"medium"/"high"` sort alphabetically (`"high" < "low"`), which is wrong. An ordered IntEnum lets me sort tasks directly and turns a mistyped priority into an error instead of a silent bug.
 
-3. **Added scheduling *time* and a *time budget*, which the original design
-   was missing.** `explain_plan()` promised to say "when" each task happens,
-   but nothing recorded a time, and `generate_plan()` had no limit to schedule
-   against. I added `Task.start_time` (set when a task is placed in a plan)
-   and changed `generate_plan(pet, day, available_minutes)` to take the day's
-   available minutes. Now the scheduler has a real constraint to enforce and
-   can report when each task occurs — which is the tradeoff this project is
-   about (what to drop when tasks don't all fit).
+3. Added scheduling time and a time budget, which the original design was missing. `explain_plan()` promised to say "when" each task happens, but nothing recorded a time, and `generate_plan()` had no limit to schedule
+against. I added `Task.start_time` (set when a task is placed in a plan) and changed `generate_plan(pet, day, available_minutes)` to take the day's available minutes. Now the scheduler has a real constraint to enforce and can report when each task occurs (what to drop when tasks don't all fit).
 
 ---
 

@@ -55,6 +55,7 @@ class Task:
     frequency: Frequency = Frequency.ONCE
     completed: bool = False
     start_time: time | None = None         # when it happens, once scheduled
+    due_date: date | None = None           # which day this occurrence is for
     pet: "Pet | None" = None               # back-reference, set on attach
 
     @classmethod
@@ -85,9 +86,37 @@ class Task:
         if frequency is not None:
             self.frequency = frequency
 
-    def mark_complete(self) -> None:
-        """Mark this task as completed."""
+    def mark_complete(self, today: date | None = None) -> "Task | None":
+        """Mark this task completed and, if it recurs, spawn the next occurrence.
+
+        For a DAILY or WEEKLY task, completing it automatically creates a fresh
+        (uncompleted) copy whose `due_date` is advanced by the right interval —
+        today + 1 day for daily, today + 7 days for weekly — attaches it to the
+        same pet, and returns it. A ONCE task recurs nothing and returns None.
+
+        `today` defaults to the real current date; pass it explicitly in tests
+        so the computed due date is deterministic.
+        """
         self.completed = True
+
+        interval = {
+            Frequency.DAILY: timedelta(days=1),
+            Frequency.WEEKLY: timedelta(weeks=1),
+        }.get(self.frequency)
+        if interval is None:
+            return None  # ONCE — nothing to reschedule
+
+        base = today or self.due_date or date.today()
+        next_task = Task(
+            title=self.title,
+            duration=self.duration,
+            priority=self.priority,
+            frequency=self.frequency,
+            due_date=base + interval,
+        )
+        if self.pet is not None:
+            self.pet.add_task(next_task)
+        return next_task
 
 
 @dataclass
@@ -191,10 +220,68 @@ class Scheduler:
                 scheduled.append(task)
         return scheduled
 
+    # --- sort & filter --------------------------------------------------
+    def sort_by_time(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return tasks sorted chronologically by their `start_time`.
+
+        The sort key is each task's time rendered as an "HH:MM" string. Because
+        the hours and minutes are zero-padded, plain string order matches clock
+        order (e.g. "08:30" < "10:00"). Unscheduled tasks (start_time is None)
+        sort to the end via the sentinel "99:99".
+        """
+        if tasks is None:
+            tasks = self.all_tasks()
+        return sorted(
+            tasks,
+            key=lambda t: t.start_time.strftime("%H:%M") if t.start_time else "99:99",
+        )
+
+    def filter_tasks(
+        self, completed: bool | None = None, pet_name: str | None = None
+    ) -> list[Task]:
+        """Filter all of the owner's tasks by completion status and/or pet name.
+
+        Pass `completed=True/False` to keep only done / not-done tasks, and/or
+        `pet_name` to keep only one pet's tasks (case-insensitive). Omit both to
+        get everything.
+        """
+        tasks = self.all_tasks()
+        if completed is not None:
+            tasks = [t for t in tasks if t.completed == completed]
+        if pet_name is not None:
+            tasks = [t for t in tasks if t.pet and t.pet.name.lower() == pet_name.lower()]
+        return tasks
+
     # --- manage ---------------------------------------------------------
-    def complete(self, task: Task) -> None:
-        """Mark a task done."""
-        task.mark_complete()
+    def complete(self, task: Task, today: date | None = None) -> "Task | None":
+        """Mark a task done; return the next occurrence if it recurs (else None)."""
+        return task.mark_complete(today)
+
+    def detect_conflicts(self, tasks: list[Task] | None = None) -> list[str]:
+        """Lightweight overlap check across scheduled tasks.
+
+        Sorts the timed tasks chronologically and compares each with the next,
+        flagging any pair whose time slots overlap (including two tasks that
+        start at the exact same time). Returns a list of human-readable warning
+        strings — empty when there are no conflicts. Never raises, so callers
+        can print the warnings without wrapping the call in error handling.
+        """
+        if tasks is None:
+            tasks = self.all_tasks()
+
+        timed = self.sort_by_time([t for t in tasks if t.start_time is not None])
+        warnings: list[str] = []
+        for current, nxt in zip(timed, timed[1:]):
+            current_end = self._advance(current.start_time, current.duration)
+            if nxt.start_time < current_end:
+                who_a = current.pet.name if current.pet else "unknown pet"
+                who_b = nxt.pet.name if nxt.pet else "unknown pet"
+                warnings.append(
+                    f"⚠️  Conflict: '{current.title}' ({who_a}) at "
+                    f"{current.start_time.strftime('%H:%M')} overlaps "
+                    f"'{nxt.title}' ({who_b}) at {nxt.start_time.strftime('%H:%M')}."
+                )
+        return warnings
 
     def explain(self, available_minutes: int, pet: Pet | None = None) -> str:
         """Build a schedule and return a human-readable explanation of it."""
