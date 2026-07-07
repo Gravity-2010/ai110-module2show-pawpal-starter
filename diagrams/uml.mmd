@@ -1,15 +1,42 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
+    %% PawPal+ class diagram based on brainstormed design in reflection.md
 
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Owner {
+        +str name
+        +create_profile() Owner
+        +update_name(new_name) void
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +Owner owner
+        +create_pet() Pet
+        +update_pet_info() void
     }
 
-    ClassName --> AnotherClass : relationship
+    class Task {
+        +str title
+        +int duration
+        +int priority
+        +Pet pet
+        +bool completed
+        +create_task() Task
+        +edit_task() void
+        +mark_complete() void
+    }
+
+    class Plan {
+        +Pet pet
+        +list~Task~ tasks
+        +date date
+        +str summary
+        +generate_plan() Plan
+        +explain_plan() str
+    }
+
+    %% Relationships (o-- aggregation, --> association)
+    Owner "1" o-- "*" Pet : owns
+    Pet "1" o-- "*" Task : has
+    Plan "1" --> "1" Pet : for
+    Plan "1" o-- "*" Task : schedules
