@@ -59,19 +59,47 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 
 ## 🧪 Testing PawPal+
 
+Run the full test suite from the project root:
+
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
 
-Sample test output:
+The suite lives in `tests/test_pawpal.py` and covers both the happy paths and the
+trickier edge cases of the scheduling logic in `pawpal_system.py`:
+
+- **Task basics** — completing a task flips its status; adding a task grows the pet's list.
+- **Sorting correctness** — `sort_by_time()` returns tasks in chronological order, and
+  unscheduled tasks (`start_time is None`) sort to the end instead of crashing.
+- **Recurrence logic** — completing a `DAILY` task spawns a new task due the following
+  day (and a `WEEKLY` task one 7 days out), attached to the same pet; a `ONCE` task
+  does not recur.
+- **Conflict detection** — two tasks at the exact same time are flagged, overlapping
+  slots are flagged, back-to-back (adjacent) tasks are *not* flagged, and an empty
+  schedule produces no warnings.
+- **Budget planning** — `build_schedule()` skips tasks that don't fit the time budget.
+
+Successful test run:
 
 ```
-# Paste your pytest output here
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.5.0
+rootdir: /mnt/Documents/Summer2026/AI110/ai110-module2show-pawpal-starter
+collected 12 items
+
+tests/test_pawpal.py ............                                        [100%]
+
+============================== 12 passed in 0.02s ==============================
 ```
+
+### Confidence Level: ★★★★☆ (4 / 5)
+
+All 12 tests pass and they exercise every core scheduling behavior — sorting,
+recurrence, conflict detection, and budget-limited planning — plus the main edge
+cases (no tasks, identical/adjacent times, non-recurring tasks). The core logic is
+well covered and behaves as designed. Holding back the fifth star because the tests
+are unit-level only: the Streamlit UI in `app.py`, cross-pet scheduling at scale, and
+day-boundary/timezone behavior are not yet under test.
 
 ## 📐 Smarter Scheduling
 
